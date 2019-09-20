@@ -1,4 +1,4 @@
 # rpi - logger
 
 - all in one script for stand alone run. 
-- to start on startup run the script from /etc/rc.local
+- to start on startup run the script from /etc/rc.local (put & in the end of the command)
