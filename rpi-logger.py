@@ -21,7 +21,7 @@ class Humid(object):
 class Logger(object):
     """ Obstara vse okolo logovani """
 
-    def __init__ (self, dht_pin, server, remote_dir):
+    def __init__ (self, dht_pin, server, remote_dir, sleep_sec):
         """ nastavy jednotliva cidla
         
         dht.pin: gpio na kterem je dht11
@@ -44,6 +44,8 @@ class Logger(object):
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
         self._header = '{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c',sep=self._sep)
+        # set sleep time
+        self._sleep_sec = sleep_sec
 
         ### SETUP PROBES ###
         # nastavi dht11
@@ -98,9 +100,9 @@ class Logger(object):
         while True:
 
             # make new line
-            time = datetime.datetime.now()
-            time = time.strftime('%Y-%m-%d %H:%M:%S')
-            line = '{}{sep}'.format(time,sep=self._sep)
+            time_ = datetime.datetime.now()
+            time_ = time_.strftime('%Y-%m-%d %H:%M:%S')
+            line = '{}{sep}'.format(time_,sep=self._sep)
             
             # nacte vlhkost a teploty z dht cidla
             ht = self._humid.read()
@@ -112,10 +114,13 @@ class Logger(object):
             self._write_line(line)
             self._write_current_reading(line)
 
+            time.sleep(self._sleep_sec)
+
 
 if __name__ == '__main__':
 
     logger = Logger(dht_pin=4, server='skola', 
-            remote_dir='/home/jakub/public_html/rpidatapeklo/')
+            remote_dir='/home/jakub/public_html/rpidatapeklo/',
+            sleep_sec = 60)
     logger.loop()
 
