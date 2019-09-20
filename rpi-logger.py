@@ -38,8 +38,10 @@ class Logger(object):
         self._logfile = '{}/{}.dat'.format(self._root,nf.strftime('%Y%m%d%H%M'))
         # setup remote server
         self._server = server
-        # setup remote soubor na logovani
-        self._remote_file = '{}/{}.dat'.format(remote_dir,nf.strftime('%Y%m%d%H%M'))
+        # setup remote dir
+        self._remote_dir = remote_dir
+        # setup remote soubor na logovan
+        self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
         self._header = '{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c',sep=self._sep)
 
@@ -47,24 +49,45 @@ class Logger(object):
         # nastavi dht11
         self._humid = Humid(dht_pin)
 
-    def _send_reading(self,line):
-        # TODO  pridat line do mycmd
-        mycmd = "ssh {} 'echo {} >> {}'".format(self._server, line, 
-                self._remote_file)
-        # print (mycmd)
+    def _send_reading(self,line,file_,append=True):
+        """ send line to remote server """
+        if (append) :
+            mycmd = "ssh {} 'echo {} >> {}'".format(self._server, line, 
+                file_)
+        else :
+            mycmd = "ssh {} 'echo {} > {}'".format(self._server, line, 
+                file_)
+
         os.system(mycmd)
 
     def _make_header(self):
-        # first line in the file is the header
+        """ first line in the file is the header """
         self._write_line(self._header)
-
     
     def _write_line(self,line):
-        # write line in local and remote file
-        self._send_reading(line)
+        """  write line in local and remote file """
+        self._send_reading(line, self._remote_file)
         line += '\n'
         with open(self._logfile,'a') as f:
             f.write(line)
+
+    def _write_current_reading(self,line):
+        """write last reading to separate file"""
+        # setup remote soubor 
+        # local file 
+        file_ = 'current_reading'
+        remote_file = '{}/{}.dat'.format(self._remote_dir,file_)
+        local_file = '{}/{}.dat'.format(self._root,file_)
+
+        # send remote
+        self._send_reading(self._header, remote_file, append=False)
+        self._send_reading(line, remote_file, append=True)
+        # save local
+        with open(local_file,'w') as f:
+            f.write(self._header+'\n')
+            f.write(line)
+
+
 
 
     def loop(self):
@@ -76,7 +99,7 @@ class Logger(object):
 
             # make new line
             time = datetime.datetime.now()
-            time = time.strftime('%Y-%m-%d %H:%M:00')
+            time = time.strftime('%Y-%m-%d %H:%M:%S')
             line = '{}{sep}'.format(time,sep=self._sep)
             
             # nacte vlhkost a teploty z dht cidla
@@ -87,6 +110,7 @@ class Logger(object):
             line += '{}'.format(ht[1])
             
             self._write_line(line)
+            self._write_current_reading(line)
 
 
 if __name__ == '__main__':
