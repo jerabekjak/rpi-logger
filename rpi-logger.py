@@ -28,6 +28,8 @@ class Logger(object):
         """
 
         ### GENERAL SETTINGS ###
+        # set sep
+        self._sep = ','
         # nastaveni pracovniho adresare
         self._root = os.path.dirname(os.path.abspath(__file__))
         # current time
@@ -38,6 +40,8 @@ class Logger(object):
         self._server = server
         # setup remote soubor na logovani
         self._remote_file = '{}/{}.dat'.format(remote_dir,nf.strftime('%Y%m%d%H%M'))
+        # set header
+        self._header = '{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c',sep=self._sep)
 
         ### SETUP PROBES ###
         # nastavi dht11
@@ -50,26 +54,39 @@ class Logger(object):
         # print (mycmd)
         os.system(mycmd)
 
+    def _make_header(self):
+        # first line in the file is the header
+        self._write_line(self._header)
+
+    
+    def _write_line(self,line):
+        # write line in local and remote file
+        self._send_reading(line)
+        line += '\n'
+        with open(self._logfile,'a') as f:
+            f.write(line)
+
+
     def loop(self):
         """" logovaci smicka """
+
+        self._make_header()
+
         while True:
 
-            # vynuluje line
-            line = ''
+            # make new line
+            time = datetime.datetime.now()
+            time = time.strftime('%Y-%m-%d %H:%M:00')
+            line = '{}{sep}'.format(time,sep=self._sep)
             
             # nacte vlhkost a teploty z dht cidla
             ht = self._humid.read()
             
             # prida vlhost a teploty do line 
-            line += str(ht[0]) + ' '
-            line += str(ht[1])
+            line += '{}{sep}'.format(ht[0],sep=self._sep)
+            line += '{}'.format(ht[1])
             
-            self._send_reading(line)
-            line += '\n'
-            print (line)
-
-            # with open(self._logfile,'a') as f:
-            #     f.write(line)
+            self._write_line(line)
 
 
 if __name__ == '__main__':
