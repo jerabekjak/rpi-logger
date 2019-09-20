@@ -27,8 +27,7 @@ class Logger(object):
         dht.pin: gpio na kterem je dht11
         """
 
-        # nastaveni adresare na ulozeni dat 
-        self._root = '/home/pi/rpi-project/home-logger/'
+        # nastaveni pracovniho adresare
         self._root = os.path.dirname(os.path.abspath(__file__))
         print ('working directory in {}'.format(self._root))
 
@@ -59,12 +58,13 @@ class Logger(object):
             line += str(ht[1])
             
             line += '\n'
+            print (line)
             with open(self._logfile,'a') as f:
                 f.write(line)
 
 
 if __name__ == '__main__':
 
-    logger = Logger(4)
+    logger = Logger(dht_pin=4)
     logger.loop()
 
