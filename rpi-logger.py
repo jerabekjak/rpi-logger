@@ -1,4 +1,8 @@
 #!/usr/bin/python
+
+# TODO humidity probe reads None or two times 
+#      smaller values if tempereture probe is 
+#      on the same power wire (or there is other reason)
 import os
 import sys
 import glob
