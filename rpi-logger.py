@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os
 import sys
+import glob
 import time 
 import datetime
 
@@ -24,6 +25,39 @@ class Humid(object):
     def read(self):
         ht = self._read(self._sensor, self._pin)
         return (ht)
+
+
+class Temp(object):
+
+    def __init__(self):
+
+        os.system('modprobe w1-gpio')
+        os.system('modprobe w1-therm')
+  
+        base_dir = '/sys/bus/w1/devices/'
+        device_folder = glob.glob(base_dir + '28*')
+        self._device_file = [df + '/w1_slave' for df in device_folder] 
+
+
+    def _read_temp_raw(self,df):
+      f = open(df, 'r')
+      lines = f.readlines()
+      f.close()
+      return lines
+                 
+    def read(self):
+        temp_c = []
+        for idf in self._device_file :
+            lines = self._read_temp_raw(idf)
+            while lines[0].strip()[-3:] != 'YES':
+                time.sleep(0.2)
+                lines = read_temp_raw(idf)
+            equals_pos = lines[1].find('t=')
+            if equals_pos != -1:
+                temp_string = lines[1][equals_pos+2:]
+                temp = float(temp_string) / 1000.0
+            temp_c.append(temp)
+        return temp_c
 
 
 class Logger(object):
@@ -51,13 +85,13 @@ class Logger(object):
         # setup remote soubor na logovan
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
-        self._header = '{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c',sep=self._sep)
+        self._header = '{}{sep}{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c','temp_c_outside',sep=self._sep)
         # set sleep time
         self._sleep_sec = sleep_sec
 
         ### SETUP PROBES ###
-        # nastavi dht11
         self._humid = Humid(dht_pin)
+        self._temp  = Temp()
 
     def _send_reading(self,line,file_,append=True):
         """ send line to remote server """
@@ -114,10 +148,11 @@ class Logger(object):
             
             # nacte vlhkost a teploty z dht cidla
             ht = self._humid.read()
-            
+            t  = self._temp.read() 
             # prida vlhost a teploty do line 
             line += '{}{sep}'.format(ht[0],sep=self._sep)
-            line += '{}'.format(ht[1])
+            line += '{}{sep}'.format(ht[1],sep=self._sep)
+            line += '{}'.format(t[0])
             
             self._write_line(line)
             self._write_current_reading(line)
@@ -130,8 +165,8 @@ if __name__ == '__main__':
     # wait untill internet connection is active
     wait_for_internet_connection()
     # init logger
-    logger = Logger(dht_pin=4, server='skola', 
+    logger = Logger(dht_pin=14, server='skola', 
             remote_dir='/home/jakub/public_html/rpidatapeklo/',
-            sleep_sec = 60)
+            sleep_sec = 1)
     logger.loop()
 
