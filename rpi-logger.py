@@ -172,6 +172,6 @@ if __name__ == '__main__':
     # init logger
     logger = Logger(dht_pin=[4,14], server='storm', 
             remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 1)
+            sleep_sec = 60)
     logger.loop()
 
