@@ -247,13 +247,18 @@ class Logger(object):
         # setup remote soubor na logovan
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
-        self._header = '{}{sep}{}{sep}{}{sep}{}{sep}{}'.format('TIMESTAMP','humid_proc','temp_c','humid_proc','temp_c',sep=self._sep)
+        self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}'\
+                .format('TIMESTAMP','humid_proc','temp_c',\
+                'humid_proc','temp_c',\
+                'temp_c_bme','pressure_hPa_bme','humis_proc_bme',\
+                sep=self._sep)
         # set sleep time
         self._sleep_sec = sleep_sec
 
         ### SETUP PROBES ###
         self._humid_1 = Humid(dht_pin[0])
         self._humid_2 = Humid(dht_pin[1])
+        self._bme280 = BME280()
 
     def _send_reading(self,line,file_,append=True):
         """ send line to remote server """
@@ -311,11 +316,16 @@ class Logger(object):
             # nacte vlhkost a teploty z dht cidla
             ht1 = self._humid_1.read()
             ht2 = self._humid_2.read()
+            temperature,pressure,humidity = self._bme280.readBME280All()
+
             # prida vlhost a teploty do line 
             line += '{}{sep}'.format(ht1[0],sep=self._sep)
             line += '{}{sep}'.format(ht1[1],sep=self._sep)
             line += '{}{sep}'.format(ht2[0],sep=self._sep)
-            line += '{}'.format(ht2[1])
+            line += '{}{sep}'.format(ht2[1],sep=self._sep)
+            line += '{}{sep}'.format(temperature,sep=self._sep)
+            line += '{}{sep}'.format(pressure,sep=self._sep)
+            line += '{}'.format(humidity)
             
             self._write_line(line)
             self._write_current_reading(line)
@@ -330,6 +340,6 @@ if __name__ == '__main__':
     # init logger
     logger = Logger(dht_pin=[4,14], server='storm', 
             remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 1)
+            sleep_sec = 60)
     logger.loop()
 
