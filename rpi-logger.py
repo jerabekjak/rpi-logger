@@ -6,6 +6,7 @@ import glob
 import time 
 import datetime
 import smbus
+import math
 from ctypes import c_short
 from ctypes import c_byte
 from ctypes import c_ubyte
@@ -227,9 +228,30 @@ class Tipping(object):
         self._pin = pin
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self._pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self._state = GPIO.input(self._pin)
+        self._dt_tip = 5 # secs
 
-    def measure(self):
-        return GPIO.input(self._pin)
+    def measure(self, dt_total):
+        tips = 0
+        n = math.ceil(dt_total/self._dt_tip)
+        new_sleep = dt_total/n
+
+        # nacist pokud se neco zmenilo mezi zapisem ostatnich cidel
+        state_old = self._state
+        state_new = GPIO.input(self._pin)
+        if (state_old != state_new):
+            tips += 1
+            self._state = state_new
+
+        for i in range(int(n)):
+            state_old = self._state
+            time.sleep(new_sleep)
+            state_new = GPIO.input(self._pin)
+            if (state_old != state_new):
+                    tips += 1
+                    self._state = state_new
+
+        return tips
 
 
 
@@ -267,9 +289,7 @@ class Logger(object):
         self._sleep_sec = sleep_sec
 
         ### SETUP PROBES ###
-        #self._humid_1 = Humid(dht_pin[0])
-        #self._humid_2 = Humid(dht_pin[1])
-        #self._bme280 = BME280()
+        self._bme280 = BME280()
         self._tipping = Tipping(tb_pin)
         self._temp = Temp()
 
@@ -321,34 +341,35 @@ class Logger(object):
 
         while True:
 
-            # make new line
-            time_ = datetime.datetime.now()
-            time_ = time_.strftime('%Y-%m-%d %H:%M:%S')
-            line = '{}{sep}'.format(time_,sep=self._sep)
             
             # nacte vlhkost a teploty z dht cidla
-            #ht1 = self._humid_1.read()
-            #ht2 = self._humid_2.read()
-            #temperature,pressure,humidity = self._bme280.readBME280All()
+            t1 = time.time()
+            temperature,pressure,humidity = self._bme280.readBME280All()
             t = self._temp.read()
-            tb = self._tipping.measure()
+            #kolik casu je na tb cteni
+            dt_tb = self._sleep_sec - (time.time() - t1)
+            tb = self._tipping.measure(dt_tb)
 
-            # prida vlhost a teploty do line 
-            #line += '{}{sep}'.format(ht1[0],sep=self._sep)
-            #line += '{}{sep}'.format(ht1[1],sep=self._sep)
-            #line += '{}{sep}'.format(ht2[0],sep=self._sep)
-            #line += '{}{sep}'.format(ht2[1],sep=self._sep)
-            #line += '{}{sep}'.format(temperature,sep=self._sep)
-            #line += '{}{sep}'.format(pressure,sep=self._sep)
-            #line += '{}'.format(humidity)
+            # make new line
+            line = ''
+            # pridam cteni do liny
+            for it in t:
+                line += '{}{sep}'.format(it,sep=self._sep)
+            line += '{}{sep}'.format(temperature,sep=self._sep)
+            line += '{}{sep}'.format(pressure,sep=self._sep)
+            line += '{}{sep}'.format(humidity,sep=self._sep)
+            line += '{}'.format(tb)
+
+            #cas konce intervaly hodi na prvni misto v line
+            time_ = datetime.datetime.now()
+            time_ = time_.strftime('%Y-%m-%d %H:%M:%S')
+            line = '{}{sep}{line}'.format(time_, sep=self._sep, line=line)
             
             #self._write_line(line)
             #self._write_current_reading(line)
 
             print (line)
-            print (t)
-            print (tb)
-            raw_input()
+            #raw_input()
             #time.sleep(self._sleep_sec)
 
 
@@ -359,6 +380,6 @@ if __name__ == '__main__':
     # init logger
     logger = Logger(tb_pin=11, server='storm', 
             remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 5)
+            sleep_sec = 60)
     logger.loop()
 
