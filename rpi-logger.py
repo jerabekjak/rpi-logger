@@ -281,9 +281,9 @@ class Logger(object):
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
         self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}'\
-                .format('TIMESTAMP','humid_proc','temp_c',\
-                'humid_proc','temp_c',\
-                'temp_c_bme','pressure_hPa_bme','humis_proc_bme',\
+                .format('TIMESTAMP','temp_c','temp_c',\
+                'temp_c',\
+                'temp_c_bme','pressure_hPa_bme','humis_proc_bme','tips_n',\
                 sep=self._sep)
         # set sleep time
         self._sleep_sec = sleep_sec
@@ -337,7 +337,7 @@ class Logger(object):
     def loop(self):
         """" logovaci smicka """
 
-        #self._make_header()
+        self._make_header()
 
         while True:
 
@@ -365,12 +365,8 @@ class Logger(object):
             time_ = time_.strftime('%Y-%m-%d %H:%M:%S')
             line = '{}{sep}{line}'.format(time_, sep=self._sep, line=line)
             
-            #self._write_line(line)
-            #self._write_current_reading(line)
-
-            print (line)
-            #raw_input()
-            #time.sleep(self._sleep_sec)
+            self._write_line(line)
+            self._write_current_reading(line)
 
 
 if __name__ == '__main__':
@@ -380,6 +376,6 @@ if __name__ == '__main__':
     # init logger
     logger = Logger(tb_pin=11, server='storm', 
             remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 60)
+            sleep_sec = 300
     logger.loop()
 
