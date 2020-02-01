@@ -1,8 +1,5 @@
 #!/usr/bin/python
 
-# TODO humidity probe reads None or two times 
-#      smaller values if tempereture probe is 
-#      on the same power wire (or there is other reason)
 import os
 import sys
 import glob
@@ -12,6 +9,7 @@ import smbus
 from ctypes import c_short
 from ctypes import c_byte
 from ctypes import c_ubyte
+import RPi.GPIO as GPIO
 
 def wait_for_internet_connection():
     import urllib2
@@ -222,10 +220,23 @@ class BME280(object):
 
         return temperature/100.0,pressure/100.0,humidity
 
+
+
+class Tipping(object):
+    def __init__(self, pin):
+        self._pin = pin
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(self._pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    def measure(self):
+        return GPIO.input(self._pin)
+
+
+
 class Logger(object):
     """ Obstara vse okolo logovani """
 
-    def __init__ (self, dht_pin, server, remote_dir, sleep_sec):
+    def __init__ (self, tb_pin, server, remote_dir, sleep_sec):
         """ nastavy jednotliva cidla
         
         dht.pin: gpio na kterem je dht11
@@ -256,9 +267,11 @@ class Logger(object):
         self._sleep_sec = sleep_sec
 
         ### SETUP PROBES ###
-        self._humid_1 = Humid(dht_pin[0])
-        self._humid_2 = Humid(dht_pin[1])
-        self._bme280 = BME280()
+        #self._humid_1 = Humid(dht_pin[0])
+        #self._humid_2 = Humid(dht_pin[1])
+        #self._bme280 = BME280()
+        self._tipping = Tipping(tb_pin)
+        self._temp = Temp()
 
     def _send_reading(self,line,file_,append=True):
         """ send line to remote server """
@@ -304,7 +317,7 @@ class Logger(object):
     def loop(self):
         """" logovaci smicka """
 
-        self._make_header()
+        #self._make_header()
 
         while True:
 
@@ -314,23 +327,29 @@ class Logger(object):
             line = '{}{sep}'.format(time_,sep=self._sep)
             
             # nacte vlhkost a teploty z dht cidla
-            ht1 = self._humid_1.read()
-            ht2 = self._humid_2.read()
-            temperature,pressure,humidity = self._bme280.readBME280All()
+            #ht1 = self._humid_1.read()
+            #ht2 = self._humid_2.read()
+            #temperature,pressure,humidity = self._bme280.readBME280All()
+            t = self._temp.read()
+            tb = self._tipping.measure()
 
             # prida vlhost a teploty do line 
-            line += '{}{sep}'.format(ht1[0],sep=self._sep)
-            line += '{}{sep}'.format(ht1[1],sep=self._sep)
-            line += '{}{sep}'.format(ht2[0],sep=self._sep)
-            line += '{}{sep}'.format(ht2[1],sep=self._sep)
-            line += '{}{sep}'.format(temperature,sep=self._sep)
-            line += '{}{sep}'.format(pressure,sep=self._sep)
-            line += '{}'.format(humidity)
+            #line += '{}{sep}'.format(ht1[0],sep=self._sep)
+            #line += '{}{sep}'.format(ht1[1],sep=self._sep)
+            #line += '{}{sep}'.format(ht2[0],sep=self._sep)
+            #line += '{}{sep}'.format(ht2[1],sep=self._sep)
+            #line += '{}{sep}'.format(temperature,sep=self._sep)
+            #line += '{}{sep}'.format(pressure,sep=self._sep)
+            #line += '{}'.format(humidity)
             
-            self._write_line(line)
-            self._write_current_reading(line)
+            #self._write_line(line)
+            #self._write_current_reading(line)
 
-            time.sleep(self._sleep_sec)
+            print (line)
+            print (t)
+            print (tb)
+            raw_input()
+            #time.sleep(self._sleep_sec)
 
 
 if __name__ == '__main__':
@@ -338,8 +357,8 @@ if __name__ == '__main__':
     # wait untill internet connection is active
     wait_for_internet_connection()
     # init logger
-    logger = Logger(dht_pin=[4,14], server='storm', 
+    logger = Logger(tb_pin=11, server='storm', 
             remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 60)
+            sleep_sec = 5)
     logger.loop()
 
