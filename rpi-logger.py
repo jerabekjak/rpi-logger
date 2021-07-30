@@ -374,8 +374,8 @@ if __name__ == '__main__':
     # wait untill internet connection is active
     wait_for_internet_connection()
     # init logger
-    logger = Logger(tb_pin=11, server='storm', 
-            remote_dir='/home/jerabek/public_html/rpidatadoma/',
-            sleep_sec = 300
+    logger = Logger(tb_pin=11, server='skola', 
+            remote_dir='/home/jakub/public_html/rpidatadoma/',
+            sleep_sec = 300)
     logger.loop()
 
