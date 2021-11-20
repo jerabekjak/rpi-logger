@@ -282,8 +282,8 @@ class Logger(object):
         # set header
         self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}'\
                 .format('TIMESTAMP','temp_c','temp_c',\
-                'temp_c',\
-                'temp_c_bme','pressure_hPa_bme','humis_proc_bme','tips_n',\
+                'temp_c','temp_c',\
+                'temp_c_bme','pressure_hPa_bme','humis_proc_bme',\
                 sep=self._sep)
         # set sleep time
         self._sleep_sec = sleep_sec
@@ -347,8 +347,8 @@ class Logger(object):
             temperature,pressure,humidity = self._bme280.readBME280All()
             t = self._temp.read()
             #kolik casu je na tb cteni
-            dt_tb = self._sleep_sec - (time.time() - t1)
-            tb = self._tipping.measure(dt_tb)
+            #dt_tb = self._sleep_sec - (time.time() - t1)
+            #tb = self._tipping.measure(dt_tb)
 
             # make new line
             line = ''
@@ -357,8 +357,8 @@ class Logger(object):
                 line += '{}{sep}'.format(it,sep=self._sep)
             line += '{}{sep}'.format(temperature,sep=self._sep)
             line += '{}{sep}'.format(pressure,sep=self._sep)
-            line += '{}{sep}'.format(humidity,sep=self._sep)
-            line += '{}'.format(tb)
+            line += '{}'.format(humidity)
+            #line += '{}'.format(tb)
 
             #cas konce intervaly hodi na prvni misto v line
             time_ = datetime.datetime.now()
@@ -368,6 +368,8 @@ class Logger(object):
             self._write_line(line)
             self._write_current_reading(line)
 
+            time.sleep(self._sleep_sec)
+            
 
 if __name__ == '__main__':
 
