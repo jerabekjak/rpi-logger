@@ -293,9 +293,9 @@ class Logger(object):
         # setup remote soubor na logovan
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
-        self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}{sep}{8}'\
+        self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}{sep}{8}{sep}{9}'\
                 .format('TIMESTAMP','temp_c','temp_c',\
-                'temp_c','temp_c',\
+                'temp_c','temp_c','temp_c',\
                 'temp_c_bme','pressure_hPa_bme','humis_proc_bme','abs_humid_g_m3_bme',\
                 sep=self._sep)
         # set sleep time
