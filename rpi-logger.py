@@ -219,7 +219,20 @@ class BME280(object):
         elif humidity < 0:
             humidity = 0
 
-        return temperature/100.0,pressure/100.0,humidity
+        # podle hatchability.com/Vaisala.pdf
+        # vapour pressure saturation
+        A = 6.11644
+        m = 7.59138
+        Tn = 240.7263
+        T = temperature/100.0
+        Pws = A*10**((m*T)/(T+Tn))
+
+        # vapour pressure 
+        Pw = Pws*humidity/100
+        # absolute humidity g/m3
+        AH = 2.16679*Pw*100/(273.15+T)
+
+        return temperature/100.0,pressure/100.0,humidity, AH
 
 
 
@@ -280,10 +293,10 @@ class Logger(object):
         # setup remote soubor na logovan
         self._remote_file = '{}/{}.dat'.format(self._remote_dir,nf.strftime('%Y%m%d%H%M'))
         # set header
-        self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}'\
+        self._header = '{0}{sep}{1}{sep}{2}{sep}{3}{sep}{4}{sep}{5}{sep}{6}{sep}{7}{sep}{8}'\
                 .format('TIMESTAMP','temp_c','temp_c',\
                 'temp_c','temp_c',\
-                'temp_c_bme','pressure_hPa_bme','humis_proc_bme',\
+                'temp_c_bme','pressure_hPa_bme','humis_proc_bme','abs_humid_g_m3_bme',\
                 sep=self._sep)
         # set sleep time
         self._sleep_sec = sleep_sec
@@ -344,7 +357,7 @@ class Logger(object):
             
             # nacte vlhkost a teploty z dht cidla
             t1 = time.time()
-            temperature,pressure,humidity = self._bme280.readBME280All()
+            temperature,pressure,humidity,abs_humid = self._bme280.readBME280All()
             t = self._temp.read()
             #kolik casu je na tb cteni
             #dt_tb = self._sleep_sec - (time.time() - t1)
@@ -357,7 +370,8 @@ class Logger(object):
                 line += '{}{sep}'.format(it,sep=self._sep)
             line += '{}{sep}'.format(temperature,sep=self._sep)
             line += '{}{sep}'.format(pressure,sep=self._sep)
-            line += '{}'.format(humidity)
+            line += '{}{sep}'.format(humidity,sep=self._sep)
+            line += '{}'.format(abs_humid)
             #line += '{}'.format(tb)
 
             #cas konce intervaly hodi na prvni misto v line
